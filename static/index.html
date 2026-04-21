@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MNIST Neural Network Explorer</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════ HEADER ════════════════════ -->
+<header>
+  <div class="header-left">
+    <div class="logo">
+      <span class="logo-icon">🧠</span>
+      <span class="logo-text">MNIST Neural Network Explorer</span>
+    </div>
+    <div class="model-pills">
+      <span class="pill pill-blue" id="pill-device">CPU</span>
+      <span class="pill pill-purple" id="pill-params">—</span>
+      <span class="pill" id="pill-status">Initialising…</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="arch-label">Architecture: 784 → 256 → 128 → 64 → 10</div>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════ MAIN GRID ═════════════════ -->
+<main>
+
+  <!-- ─── LEFT COLUMN: Draw & Predict ─────────────────────────────────── -->
+  <section class="panel panel-draw">
+    <div class="panel-header">
+      <h2>Draw a Digit</h2>
+      <div class="panel-actions">
+        <button class="btn btn-sm" id="btn-clear">Clear</button>
+        <button class="btn btn-sm btn-accent" id="btn-sample">Random Sample</button>
+      </div>
+    </div>
+
+    <!-- Drawing canvas -->
+    <div class="canvas-wrap">
+      <canvas id="draw-canvas" width="252" height="252"></canvas>
+      <div class="canvas-hint" id="canvas-hint">Draw a digit here</div>
+    </div>
+
+    <!-- 28×28 pixel grid -->
+    <div class="pixel-grid-section">
+      <div class="section-label">28 × 28 Input (what the network sees)</div>
+      <canvas id="pixel-canvas" width="196" height="196"></canvas>
+    </div>
+
+    <!-- Prediction result -->
+    <div class="prediction-box" id="prediction-box">
+      <div class="pred-digit" id="pred-digit">?</div>
+      <div class="pred-info">
+        <div class="pred-label">Prediction</div>
+        <div class="pred-conf" id="pred-conf">—</div>
+        <div class="pred-time" id="pred-time">—</div>
+      </div>
+    </div>
+
+    <!-- Confidence bars for all 10 digits -->
+    <div class="conf-section">
+      <div class="section-label">Confidence per digit</div>
+      <div class="conf-bars" id="conf-bars">
+        <div class="conf-row" data-digit="0"><span class="conf-digit">0</span><div class="conf-bar-wrap"><div class="conf-bar" id="conf-0"></div></div><span class="conf-pct" id="conf-pct-0">0%</span></div>
+        <div class="conf-row" data-digit="1"><span class="conf-digit">1</span><div class="conf-bar-wrap"><div class="conf-bar" id="conf-1"></div></div><span class="conf-pct" id="conf-pct-1">0%</span></div>
+        <div class="conf-row" data-digit="2"><span class="conf-digit">2</span><div class="conf-bar-wrap"><div class="conf-bar" id="conf-2"></div></div><span class="conf-pct" id="conf-pct-2">0%</span></div>
+        <div class="conf-row" data-digit="3"><span class="conf-digit">3</span><div class="conf-bar-wrap"><div class="conf-bar" id="conf-3"></div></div><span class="conf-pct" id="conf-pct-3">0%</span></div>
+        <div class="conf-row" data-digit="4"><span class="conf-digit">4</span><div class="conf-bar-wrap"><div class="conf-bar" id="conf-4"></div></div><span class="conf-pct" id="conf-pct-4">0%</span></div>
+        <div class="conf-row" data-digit="5"><span class="conf-digit">5</span><div class="conf-bar-wrap"><div class="conf-bar" id="conf-5"></div></div><span class="conf-pct" id="conf-pct-5">0%</span></div>
+        <div class="conf-row" data-digit="6"><span class="conf-digit">6</span><div class="conf-bar-wrap"><div class="conf-bar" id="conf-6"></div></div><span class="conf-pct" id="conf-pct-6">0%</span></div>
+        <div class="conf-row" data-digit="7"><span class="conf-digit">7</span><div class="conf-bar-wrap"><div class="conf-bar" id="conf-7"></div></div><span class="conf-pct" id="conf-pct-7">0%</span></div>
+        <div class="conf-row" data-digit="8"><span class="conf-digit">8</span><div class="conf-bar-wrap"><div class="conf-bar" id="conf-8"></div></div><span class="conf-pct" id="conf-pct-8">0%</span></div>
+        <div class="conf-row" data-digit="9"><span class="conf-digit">9</span><div class="conf-bar-wrap"><div class="conf-bar" id="conf-9"></div></div><span class="conf-pct" id="conf-pct-9">0%</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── MIDDLE COLUMN: Network Flow ──────────────────────────────────── -->
+  <section class="panel panel-network">
+    <div class="panel-header">
+      <h2>Neural Network Flow</h2>
+      <div class="section-label">Live layer activations</div>
+    </div>
+
+    <div class="flow-container">
+      <!-- Layer 0: Input -->
+      <div class="flow-step">
+        <div class="flow-label">Input<br><span class="flow-sub">784 pixels</span></div>
+        <canvas class="act-canvas" id="act-input" width="112" height="112"></canvas>
+        <div class="flow-formula">28 × 28 → 784</div>
+      </div>
+
+      <div class="flow-arrow">
+        <div class="arrow-line"></div>
+        <div class="arrow-label">Flatten +<br>Linear + ReLU</div>
+        <div class="arrow-line"></div>
+      </div>
+
+      <!-- Layer 1: Hidden 1 -->
+      <div class="flow-step">
+        <div class="flow-label">Hidden 1<br><span class="flow-sub">256 neurons</span></div>
+        <canvas class="act-canvas" id="act-layer1" width="112" height="112"></canvas>
+        <div class="flow-formula">W₁(256×784) + b₁</div>
+      </div>
+
+      <div class="flow-arrow">
+        <div class="arrow-line"></div>
+        <div class="arrow-label">Dropout(0.2)<br>Linear + ReLU</div>
+        <div class="arrow-line"></div>
+      </div>
+
+      <!-- Layer 2: Hidden 2 -->
+      <div class="flow-step">
+        <div class="flow-label">Hidden 2<br><span class="flow-sub">128 neurons</span></div>
+        <canvas class="act-canvas" id="act-layer2" width="112" height="112"></canvas>
+        <div class="flow-formula">W₂(128×256) + b₂</div>
+      </div>
+
+      <div class="flow-arrow">
+        <div class="arrow-line"></div>
+        <div class="arrow-label">Dropout(0.2)<br>Linear + ReLU</div>
+        <div class="arrow-line"></div>
+      </div>
+
+      <!-- Layer 3: Hidden 3 -->
+      <div class="flow-step">
+        <div class="flow-label">Hidden 3<br><span class="flow-sub">64 neurons</span></div>
+        <canvas class="act-canvas" id="act-layer3" width="112" height="112"></canvas>
+        <div class="flow-formula">W₃(64×128) + b₃</div>
+      </div>
+
+      <div class="flow-arrow">
+        <div class="arrow-line"></div>
+        <div class="arrow-label">Linear +<br>Softmax</div>
+        <div class="arrow-line"></div>
+      </div>
+
+      <!-- Output layer -->
+      <div class="flow-step">
+        <div class="flow-label">Output<br><span class="flow-sub">10 classes</span></div>
+        <div class="output-neurons" id="output-neurons">
+          <div class="out-neuron" data-d="0"><div class="out-fill" id="out-0"></div><span>0</span></div>
+          <div class="out-neuron" data-d="1"><div class="out-fill" id="out-1"></div><span>1</span></div>
+          <div class="out-neuron" data-d="2"><div class="out-fill" id="out-2"></div><span>2</span></div>
+          <div class="out-neuron" data-d="3"><div class="out-fill" id="out-3"></div><span>3</span></div>
+          <div class="out-neuron" data-d="4"><div class="out-fill" id="out-4"></div><span>4</span></div>
+          <div class="out-neuron" data-d="5"><div class="out-fill" id="out-5"></div><span>5</span></div>
+          <div class="out-neuron" data-d="6"><div class="out-fill" id="out-6"></div><span>6</span></div>
+          <div class="out-neuron" data-d="7"><div class="out-fill" id="out-7"></div><span>7</span></div>
+          <div class="out-neuron" data-d="8"><div class="out-fill" id="out-8"></div><span>8</span></div>
+          <div class="out-neuron" data-d="9"><div class="out-fill" id="out-9"></div><span>9</span></div>
+        </div>
+        <div class="flow-formula">W₄(10×64) + Softmax</div>
+      </div>
+    </div>
+
+    <!-- Stats row below flow -->
+    <div class="flow-stats">
+      <div class="fstat">
+        <div class="fstat-val" id="fstat-params">—</div>
+        <div class="fstat-lbl">Parameters</div>
+      </div>
+      <div class="fstat">
+        <div class="fstat-val" id="fstat-inference">—</div>
+        <div class="fstat-lbl">Inference</div>
+      </div>
+      <div class="fstat">
+        <div class="fstat-val" id="fstat-pred">—</div>
+        <div class="fstat-lbl">Predicted</div>
+      </div>
+      <div class="fstat">
+        <div class="fstat-val" id="fstat-conf">—</div>
+        <div class="fstat-lbl">Confidence</div>
+      </div>
+    </div>
+
+    <!-- Process explanation -->
+    <div class="process-steps">
+      <div class="section-label">How It Processes</div>
+      <ol class="steps-list">
+        <li>Your drawing is <strong>scaled to 28×28</strong> pixels and flattened to a 784-dim vector</li>
+        <li>Each hidden layer applies a <strong>linear transformation</strong> (matrix multiply + bias)</li>
+        <li><strong>ReLU</strong> activation sets negative values to zero — adding non-linearity</li>
+        <li><strong>Dropout</strong> randomly zeros 20% of neurons during training to prevent overfitting</li>
+        <li>The output layer applies <strong>Softmax</strong> to produce probabilities that sum to 1</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ─── RIGHT COLUMN: System Metrics ─────────────────────────────────── -->
+  <section class="panel panel-metrics">
+    <div class="panel-header">
+      <h2>System Metrics</h2>
+      <div class="live-badge">● LIVE</div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-header">
+        <span class="metric-icon">⚡</span>
+        <span>CPU Usage</span>
+        <span class="metric-val" id="cpu-pct">—%</span>
+      </div>
+      <div class="gauge-wrap"><div class="gauge-bar gauge-cpu" id="gauge-cpu"></div></div>
+      <div class="metric-sub" id="cpu-cores">—</div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-header">
+        <span class="metric-icon">💾</span>
+        <span>RAM Usage</span>
+        <span class="metric-val" id="ram-pct">—%</span>
+      </div>
+      <div class="gauge-wrap"><div class="gauge-bar gauge-ram" id="gauge-ram"></div></div>
+      <div class="metric-sub" id="ram-detail">—</div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-header">
+        <span class="metric-icon">🔬</span>
+        <span>Process RAM</span>
+        <span class="metric-val" id="proc-ram">—</span>
+      </div>
+      <div class="metric-sub">Memory used by this server process</div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-header">
+        <span class="metric-icon">🚀</span>
+        <span>Training Speed</span>
+        <span class="metric-val" id="train-speed">—</span>
+      </div>
+      <div class="metric-sub" id="speed-sub">samples / second</div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-header">
+        <span class="metric-icon">⚙️</span>
+        <span>Inference Time</span>
+        <span class="metric-val" id="infer-time">—</span>
+      </div>
+      <div class="metric-sub">per forward pass</div>
+    </div>
+
+    <div class="metric-card">
+      <div class="metric-header">
+        <span class="metric-icon">🖥️</span>
+        <span>Compute Device</span>
+        <span class="metric-val" id="device-val">—</span>
+      </div>
+      <div class="metric-sub" id="device-sub">PyTorch backend</div>
+    </div>
+
+    <!-- Activity log -->
+    <div class="activity-log">
+      <div class="section-label">Activity Log</div>
+      <div class="log-scroll" id="log-scroll"></div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ═══════════════════════════════════════════ TRAINING PANEL ═══════════ -->
+<section class="panel panel-training">
+  <div class="panel-header">
+    <h2>Training Dashboard</h2>
+    <div class="train-controls">
+      <label>Epochs<input class="ctrl-input" id="inp-epochs" type="number" value="5" min="1" max="20" /></label>
+      <label>Learning Rate<input class="ctrl-input" id="inp-lr" type="number" value="0.001" step="0.0001" min="0.00001" /></label>
+      <label>Batch Size<input class="ctrl-input" id="inp-batch" type="number" value="64" min="16" max="512" /></label>
+      <label class="checkbox-label">
+        <input type="checkbox" id="inp-reset" /> Reset weights
+      </label>
+      <button class="btn btn-green" id="btn-train">▶ Train</button>
+      <button class="btn btn-red" id="btn-stop" disabled>■ Stop</button>
+    </div>
+  </div>
+
+  <!-- Progress bar -->
+  <div class="progress-section" id="progress-section">
+    <div class="progress-labels">
+      <span id="prog-label">Ready</span>
+      <span id="prog-stats"></span>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-bar" id="progress-bar"></div>
+    </div>
+    <div class="progress-details" id="progress-details"></div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="chart-title">Training Loss</div>
+      <canvas id="chart-loss" height="150"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title">Accuracy</div>
+      <canvas id="chart-acc" height="150"></canvas>
+    </div>
+  </div>
+
+  <!-- Epoch table -->
+  <div class="epoch-table-wrap">
+    <div class="section-label">Epoch Results</div>
+    <table class="epoch-table">
+      <thead>
+        <tr><th>Epoch</th><th>Loss</th><th>Train Acc</th><th>Val Acc</th><th>Time</th></tr>
+      </thead>
+      <tbody id="epoch-tbody"></tbody>
+    </table>
+  </div>
+</section>
+
+<script src="app.js"></script>
+</body>
+</html>
