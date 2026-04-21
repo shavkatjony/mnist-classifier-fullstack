@@ -37,7 +37,6 @@ temp/
 
 # Model checkpoints if you do not want to version them
 *.pt
-*.pth
 *.pkl
 
 # Data files
